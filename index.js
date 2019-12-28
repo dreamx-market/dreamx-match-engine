@@ -92,17 +92,22 @@ const matchBuyOrders = ({ order, buyBook, makerMinimum, takerMinimum }) => {
   const onePercentOfTotalGive = giveAmount.div(Web3Utils.toBN('100'))
   const remainingGiveAmountIsAboveOnePercent = remainingGiveAmount.gte(onePercentOfTotalGive)
   if (hasRemainingGiveAmount && remainingGiveAmountIsAboveOnePercent) {
+    // re-calculate remainingTakeAmount before assigning to the rest order 
+    // because it might no longer reflect the specified selling price
+    // due to the matching & filling of buy orders of higher prices
+    let restOrderGiveAmount = remainingGiveAmount
+    let restOrderTakeAmount = calculateTakeAmount(remainingGiveAmount, giveAmount, takeAmount)
     // remaining volume is below maker's minimum, cancel trades until it is back above
-    while (remainingTakeAmount.lt(makerMinimum)) {
+    while (restOrderTakeAmount.lt(makerMinimum)) {
       const lastTrade = result.trades.pop()
       const tradeAmount = lastTrade.amount
       const tradeAmountEquivalentInGiveToken = lastTrade.amountGive
       filledGiveAmount = filledGiveAmount.sub(tradeAmountEquivalentInGiveToken)
       remainingGiveAmount = remainingGiveAmount.add(tradeAmountEquivalentInGiveToken)
       remainingTakeAmount = remainingTakeAmount.add(tradeAmount)
+      restOrderTakeAmount = calculateTakeAmount(remainingGiveAmount, giveAmount, takeAmount)
+      restOrderGiveAmount = remainingGiveAmount
     }
-    let restOrderGiveAmount = remainingGiveAmount
-    let restOrderTakeAmount = calculateTakeAmount(remainingGiveAmount, giveAmount, takeAmount)
     const restOrder = { type: order.type, giveAmount: restOrderGiveAmount.toString(), giveTokenAddress: order.giveTokenAddress, takeAmount: restOrderTakeAmount.toString(), takeTokenAddress: order.takeTokenAddress }
     result.orders.push(restOrder)
   }
@@ -185,17 +190,22 @@ const matchSellOrders = ({ order, sellBook, makerMinimum, takerMinimum }) => {
   const onePercentOfTotalTake = takeAmount.div(Web3Utils.toBN('100'))
   const remainingTakeAmountIsAboveOnePercent = remainingTakeAmount.gte(onePercentOfTotalTake)
   if (hasRemainingTakeAmount && remainingTakeAmountIsAboveOnePercent) {
-    // remaining volume is below maker's minimum, cancel trades until it is back above
-    while (remainingGiveAmount.lt(makerMinimum)) {
+    // re-calculate remainingGiveAmount before assigning to the rest order 
+    // because it might no longer reflect the specified buying price
+    // due to the matching & filling of sell orders of lower prices
+    let restOrderGiveAmount = calculateGiveAmount(remainingTakeAmount, giveAmount, takeAmount)
+    let restOrderTakeAmount = remainingTakeAmount
+    // restOrderGiveAmount is below maker's minimum, cancel trades until it is back above
+    while (restOrderGiveAmount.lt(makerMinimum)) {
       const lastTrade = result.trades.pop()
       const tradeAmount = lastTrade.amount
       const tradeAmountEquivalentInGiveToken = lastTrade.amountGive
       filledTakeAmount = filledTakeAmount.sub(tradeAmount)
       remainingTakeAmount = remainingTakeAmount.add(tradeAmount)
       remainingGiveAmount = remainingGiveAmount.add(tradeAmountEquivalentInGiveToken)
+      restOrderGiveAmount = calculateGiveAmount(remainingTakeAmount, giveAmount, takeAmount)
+      restOrderTakeAmount = remainingTakeAmount
     }
-    let restOrderGiveAmount = calculateGiveAmount(remainingTakeAmount, giveAmount, takeAmount)
-    let restOrderTakeAmount = remainingTakeAmount
     const restOrder = { type: order.type, giveAmount: restOrderGiveAmount.toString(), giveTokenAddress: order.giveTokenAddress, takeAmount: restOrderTakeAmount.toString(), takeTokenAddress: order.takeTokenAddress }
     result.orders.push(restOrder)
   }

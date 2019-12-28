@@ -8,13 +8,13 @@ const takerMinimum = Web3Utils.toWei("0.05")
 describe("matchBuyOrders", () => {
   test("cancel trades to place a rest order if remaining_give_amount is below maker_minimum and is above or equal to 1% of total_give_amount", () => {
     const buyBook = generateTestOrders([
-      { type: 'buy', price: '1', amount: '4.9', filled: '0', orderHash: "BUY#0" },
+      { type: 'buy', price: '3', amount: '0.68', filled: '0', orderHash: "BUY#0" }
     ])
     const order = generateTestOrders([
-      { type: 'sell', price: '1', amount: '5' }
+      { type: 'sell', price: '2', amount: '0.75' }
     ])[0]
     const expectedOrders = generateTestOrders([
-      { type: 'sell', price: '1', amount: '5' }
+      { type: 'sell', price: '2', amount: '0.75' }
     ])
     const expectedMatchResults = { trades: [], orders: expectedOrders }
     const receivedMatchResults = matchBuyOrders({ order, buyBook, makerMinimum, takerMinimum })
@@ -183,13 +183,13 @@ describe("matchBuyOrders", () => {
 describe("matchSellOrders", () => {
   test("cancel trades to place a rest order if remaining_give_amount is below maker_minimum and above 1% of total_give_amount", () => {
     const sellBook = generateTestOrders([
-      { type: 'sell', price: '1', amount: '4.9', filled: '0', orderHash: "SELL#0" },
+      { type: 'sell', price: '1.5', amount: '0.68', filled: '0', orderHash: "SELL#0" }
     ])
     const order = generateTestOrders([
-      { type: 'buy', price: '1', amount: '5' }
+      { type: 'buy', price: '2', amount: '0.75' }
     ])[0]
     const expectedOrders = generateTestOrders([
-      { type: 'buy', price: '1', amount: '5' }
+      { type: 'buy', price: '2', amount: '0.75' }
     ])
     const expectedMatchResults = { trades: [], orders: expectedOrders }
     const receivedMatchResults = matchSellOrders({ order, sellBook, makerMinimum, takerMinimum })
